@@ -4,31 +4,28 @@ using System.Web;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
-using SimplePaymentApp.Models;
 using SimplePaymentApp.Utils;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 
-namespace SimplePaymentApp.Extensions
+namespace SimplePaymentApp.Services
 {
-    public class PaymillContext
+    public class PaymentService : IPaymentService
     {
-        public PaymillContext(String apiKey)
+        private readonly PaymillSettings _settings;
+        public PaymentService(IOptions<PaymillSettings> settings)
         {
-            ApiUrl = @"https://api.paymill.com/v2.1";
-            if (string.IsNullOrEmpty(apiKey))
+            _settings = settings?.Value;
+            if (null == _settings || string.IsNullOrEmpty(_settings.ApiKey))
             {
-                throw new ArgumentException("You need to set an API key", "apiKey");
+                throw new Exception("You need to set an API key");
             }
-            ApiKey = apiKey;
-            _resource = Resource.Payments;
         }
 
-        public static string ApiKey { get; private set; }
-        public static string ApiUrl { get; private set; }
-        private static JsonConverter[] customConverters = { 
-            new UnixTimestampConverter(), new StringToNIntConverter()};
-        private HttpClient _httpClient;
+        public string Key => _settings.PublicKey;
+        public string Bridge => _settings.BridgeAP;
+
         public HttpClient Client
         {
             get
@@ -39,7 +36,7 @@ namespace SimplePaymentApp.Extensions
                     _httpClient.DefaultRequestHeaders.Accept
                         .Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
-                    var authInfo =  $"{ApiKey}:";
+                    string authInfo =  $"{_settings.ApiKey}:";
                     authInfo = Convert.ToBase64String(Encoding.Default.GetBytes(authInfo));
                     _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", authInfo);
                 }
@@ -48,8 +45,7 @@ namespace SimplePaymentApp.Extensions
             }
         }
 
-        private Resource _resource;
-        public async Task<Payment> CreateWithTokenAsync(string token)
+        public async Task<T> CreateWithToken<T>(string token)
         {
             if (String.IsNullOrWhiteSpace(token))
             {
@@ -59,18 +55,23 @@ namespace SimplePaymentApp.Extensions
             var encoded = EncodeObject(new { Token = token });
             var content = new StringContent(encoded);
             content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
-            var requestUri = $"{ApiUrl}/{_resource.ToString().ToLower()}";
-            HttpResponseMessage response = _httpClient.PostAsync(requestUri, content).Result;
-            String data = await readReponseMessage(response);
+            var requestUri = $"{_settings.ApiAP}/{_resource.ToString().ToLower()}";
+            HttpResponseMessage response = await _httpClient.PostAsync(requestUri, content);
+            string data = await readReponseMessage(response);
 
-            return JsonConvert.DeserializeObject<SingleResult<Payment>>(data, customConverters).Data;
+            return JsonConvert.DeserializeObject<SingleResult<T>>(data, _customConverters).Data;
         }
+
+        private HttpClient _httpClient;
+        private Resource _resource => Resource.Payments;
+        private JsonConverter[] _customConverters = {
+            new UnixTimestampConverter(), new StringToNIntConverter()};
 
         private Task<String> readReponseMessage(HttpResponseMessage response)
         {
             try
             {
-                String json = response.Content.ReadAsStringAsync().Result;
+                var json = response.Content.ReadAsStringAsync().Result;
                 var jsonArray = JObject.Parse(json);
                 if (jsonArray["data"] != null)
                 {
@@ -92,7 +93,7 @@ namespace SimplePaymentApp.Extensions
             });
         }
 
-        private string EncodeObject(Object data)
+        private string EncodeObject(object data)
         {
             if (data.GetType().Name.Contains("AnonymousType") == false)
             {
@@ -100,7 +101,7 @@ namespace SimplePaymentApp.Extensions
             }
 
             var props = data.GetType().GetProperties();
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
             foreach (var prop in props)
             {
                 object value = prop.GetValue(data, null);
@@ -117,7 +118,8 @@ namespace SimplePaymentApp.Extensions
         {
             string reply = "";
             var charset = Encoding.UTF8;
-            if (value == null) return;
+            if (null == value) 
+                return;
             try
             {
                 key = HttpUtility.UrlEncode(key.ToLower(), charset);
@@ -142,7 +144,7 @@ namespace SimplePaymentApp.Extensions
                     reply = HttpUtility.UrlEncode(value.ToString(), charset);
                 }
 
-                if (!string.IsNullOrEmpty(reply))
+                if (!String.IsNullOrEmpty(reply))
                 {
                     if (sb.Length > 0)
                         sb.Append("&");

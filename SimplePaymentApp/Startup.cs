@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SimplePaymentApp.Services;
 
 namespace SimplePaymentApp
 {
@@ -15,11 +16,13 @@ namespace SimplePaymentApp
         {
             var builder = new ConfigurationBuilder();
 
+            builder.SetBasePath(env.ContentRootPath);
+            builder.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
             if (env.IsDevelopment())
             {
                 builder.AddUserSecrets<Startup>();
+                builder.AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true);
             }
-
             builder.AddEnvironmentVariables();
 
             Configuration = builder.Build();
@@ -34,6 +37,9 @@ namespace SimplePaymentApp
 
         public void ConfigureServices(IServiceCollection services)
         {
+            var paymill = Configuration.GetSection("PayMill");
+            services.Configure<PaymillSettings>(paymill);
+            services.AddTransient<IPaymentService, PaymentService>();
             services.AddAuthentication(o =>
             {
                 o.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
@@ -43,7 +49,6 @@ namespace SimplePaymentApp
             .AddCookie();
 
             services.AddMvc();
-            services.AddSingleton<IConfiguration>(Configuration);
         }
 
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)

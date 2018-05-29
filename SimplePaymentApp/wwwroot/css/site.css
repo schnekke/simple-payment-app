@@ -10,3 +10,9 @@
 .body-content input {
     width: 50%;
 }
+
+.field-validation-error {
+    color: red;
+    font-size: x-small;
+    background-color: yellow;
+}

@@ -5,19 +5,18 @@ using System.Diagnostics;
 using Microsoft.AspNetCore.Authorization;
 using SimplePaymentApp.Models;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
-using SimplePaymentApp.Extensions;
+using SimplePaymentApp.Services;
 
 namespace SimplePaymentApp.Controllers
 {
     [Authorize]
     public class HomeController : Controller
     {
-        private IConfiguration _configuration;
+        private readonly IPaymentService _service;
 
-        public HomeController(IConfiguration configuration)
+        public HomeController(IPaymentService service)
         {
-            _configuration = configuration;
+            _service = service;
         }
 
         public IActionResult Index()
@@ -29,28 +28,28 @@ namespace SimplePaymentApp.Controllers
         [HttpPost]
         public async Task<IActionResult> Index(PaymentModel viewModel)
         {
-            var paymill = new PaymillContext(_configuration["PayMill:ApiKey"]);
-            var response = paymill.Client.GetAsync($@"{
-                _configuration["PayMill:BridgeAP"] }/?transaction.mode=CONNECTOR_TEST&channel.id={
-                _configuration["PayMill:PublicKey"] }&jsonPFunction=paymilljstests&account.number={
-                viewModel.Number }&account.expiry.month={
-                viewModel.Valid.Value.Month }&account.expiry.year={
-                viewModel.Valid.Value.Year }&account.verification={
-                viewModel.Code }&account.holder={
-                Uri.EscapeUriString(viewModel.Name) }&presentation.amount3D={ 
-                viewModel.Quantity }&presentation.currency3D=EUR").Result;
-            
-            string token = null;
-            var pattern = "(tok_)[a-z|0-9]+";
-            var content = response.Content.ReadAsStringAsync().Result;
-            if (Regex.Matches(content, pattern).Count > 0)
+            if (ModelState.IsValid)
             {
-                token = Regex.Matches(content, pattern)[0].Value;
-            }
-                                                   
-            Payment payment = await paymill.CreateWithTokenAsync(token);
-            viewModel.Result = payment.Id == String.Empty;
+                var response = _service.Client.GetAsync($@"{
+                    _service.Bridge }/?transaction.mode=CONNECTOR_TEST&channel.id={
+                    _service.Key }&jsonPFunction=paymilljstests&account.number={
+                    viewModel.Number }&account.expiry.month={
+                    viewModel.Valid.Value.Month }&account.expiry.year={
+                    viewModel.Valid.Value.Year }&account.verification={
+                    viewModel.Code }&account.holder={
+                    Uri.EscapeUriString(viewModel.Name) }&presentation.amount3D={
+                    viewModel.Quantity }&presentation.currency3D=EUR").Result;
 
+                var pattern = "(tok_)[a-z|0-9]+";
+                var content = response.Content.ReadAsStringAsync().Result;
+                if (Regex.Matches(content, pattern).Count > 0)
+                {
+                    var token = Regex.Matches(content, pattern)[0].Value;
+                    Payment payment = await _service.CreateWithToken<Payment>(token);
+                    ViewBag.Result = payment.Id == String.Empty ? "Error in payment" 
+                        : "Payment OK";
+                }
+            }
             return View(viewModel);
         }
 

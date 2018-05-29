@@ -3,15 +3,9 @@
     ViewData["Title"] = "Payment Form";
 }
 
-@if (@Model.Result == false)
-{
-    @:Error in payment
-}
-
-@if (@Model.Result == true)
-{
-    @:Payment OK
-}
+<p>
+    <span class="label label-info">@ViewBag.Result</span>
+</p>
 
 <form method="post">
     <div class="form-group">
@@ -35,7 +29,7 @@
     <div class="form-group">
         <label asp-for="Valid"></label>
         <input asp-for="Valid" type="text" data-provide="datepicker"
-               class="form-control" data-date-format="MM yyyy" />
+           class="form-control" data-date-format="MM yyyy" />
         <span asp-validation-for="Valid"></span>
     </div>
 
