@@ -1,4 +1,55 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+﻿@model PaymentModel
+@{
+    ViewData["Title"] = "Payment Form";
 }
 
+@if (@Model.Result == false)
+{
+    @:Error in payment
+}
+
+@if (@Model.Result == true)
+{
+    @:Payment OK
+}
+
+<form method="post">
+    <div class="form-group">
+        <label asp-for="Number"></label>
+        <input asp-for="Number" class="form-control" />
+        <span asp-validation-for="Number"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Name"></label>
+        <input asp-for="Name" class="form-control" />
+        <span asp-validation-for="Name"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Quantity"></label>
+        <input asp-for="Quantity" class="form-control" />
+        <span asp-validation-for="Quantity"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Valid"></label>
+        <input asp-for="Valid" type="text" data-provide="datepicker"
+               class="form-control" data-date-format="MM yyyy" />
+        <span asp-validation-for="Valid"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Code"></label>
+        <input asp-for="Code" class="form-control" />
+        <span asp-validation-for="Code"></span>
+    </div>
+
+    <div asp-validation-summary="ModelOnly"></div>
+    <button type="submit" class="btn btn-default">Submit</button>
+</form>
+
+@section scripts
+{
+    @Html.Partial("_ValidationScriptsPartial")
+}
