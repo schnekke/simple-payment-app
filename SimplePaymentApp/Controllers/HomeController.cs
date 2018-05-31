@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Threading.Tasks;
-using System.Text.RegularExpressions;
 using System.Diagnostics;
 using Microsoft.AspNetCore.Authorization;
 using SimplePaymentApp.Models;
 using Microsoft.AspNetCore.Mvc;
 using SimplePaymentApp.Services;
+using AutoMapper;
 
 namespace SimplePaymentApp.Controllers
 {
@@ -13,10 +13,12 @@ namespace SimplePaymentApp.Controllers
     public class HomeController : Controller
     {
         private readonly IPaymentService _service;
+        private readonly IMapper _mapper; 
 
-        public HomeController(IPaymentService service)
+        public HomeController(IPaymentService service, IMapper mapper)
         {
             _service = service;
+            _mapper = mapper;
         }
 
         public IActionResult Index()
@@ -26,28 +28,21 @@ namespace SimplePaymentApp.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Index(PaymentModel viewModel)
+        public async Task<IActionResult> Index([FromBody]PaymentModel viewModel)
         {
             if (ModelState.IsValid)
             {
-                var response = _service.Client.GetAsync($@"{
-                    _service.Bridge }/?transaction.mode=CONNECTOR_TEST&channel.id={
-                    _service.Key }&jsonPFunction=paymilljstests&account.number={
-                    viewModel.Number }&account.expiry.month={
-                    viewModel.Valid.Value.Month }&account.expiry.year={
-                    viewModel.Valid.Value.Year }&account.verification={
-                    viewModel.Code }&account.holder={
-                    Uri.EscapeUriString(viewModel.Name) }&presentation.amount3D={
-                    viewModel.Quantity }&presentation.currency3D=EUR").Result;
+                ViewBag.Result = "Error in payment";
 
-                var pattern = "(tok_)[a-z|0-9]+";
-                var content = response.Content.ReadAsStringAsync().Result;
-                if (Regex.Matches(content, pattern).Count > 0)
+                var tokenModel = _mapper.Map<TokenModel>(viewModel);
+                var token = await _service.GetToken(tokenModel);
+                if (!String.IsNullOrEmpty(token))
                 {
-                    var token = Regex.Matches(content, pattern)[0].Value;
                     Payment payment = await _service.CreateWithToken<Payment>(token);
-                    ViewBag.Result = payment.Id == String.Empty ? "Error in payment" 
-                        : "Payment OK";
+                    if (!String.IsNullOrEmpty(payment.Id))
+                    {
+                        ViewBag.Result = "Payment OK";
+                    }
                 }
             }
             return View(viewModel);

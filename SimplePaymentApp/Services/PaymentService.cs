@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Text;
-using System.Web;
 using System.Net.Http;
-using System.Net.Http.Headers;
+using System.IO;
 using System.Threading.Tasks;
 using SimplePaymentApp.Utils;
+using SimplePaymentApp.Models;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
@@ -13,36 +14,19 @@ namespace SimplePaymentApp.Services
 {
     public class PaymentService : IPaymentService
     {
+        private IHttpClient _client;
         private readonly PaymillSettings _settings;
-        public PaymentService(IOptions<PaymillSettings> settings)
+
+        public PaymentService(IOptions<PaymillSettings> settings, IHttpClient client)
         {
+            _client = client;
             _settings = settings?.Value;
-            if (null == _settings || string.IsNullOrEmpty(_settings.ApiKey))
+            if (String.IsNullOrEmpty(_settings?.ApiKey))
             {
-                throw new Exception("You need to set an API key");
+                throw new ArgumentException("You need to set an API key");
             }
-        }
 
-        public string Key => _settings.PublicKey;
-        public string Bridge => _settings.BridgeAP;
-
-        public HttpClient Client
-        {
-            get
-            {
-                if (_httpClient == null)
-                {
-                    _httpClient = new HttpClient();
-                    _httpClient.DefaultRequestHeaders.Accept
-                        .Add(new MediaTypeWithQualityHeaderValue("application/json"));
-
-                    string authInfo =  $"{_settings.ApiKey}:";
-                    authInfo = Convert.ToBase64String(Encoding.Default.GetBytes(authInfo));
-                    _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", authInfo);
-                }
-
-                return _httpClient;
-            }
+            _client.SetAuthHeader(_settings.ApiKey);
         }
 
         public async Task<T> CreateWithToken<T>(string token)
@@ -52,112 +36,67 @@ namespace SimplePaymentApp.Services
                 throw new ArgumentException("Token can not be blank");
             }
 
-            var encoded = EncodeObject(new { Token = token });
-            var content = new StringContent(encoded);
-            content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
-            var requestUri = $"{_settings.ApiAP}/{_resource.ToString().ToLower()}";
-            HttpResponseMessage response = await _httpClient.PostAsync(requestUri, content);
-            string data = await readReponseMessage(response);
+            var requestUri = $"{_settings.ApiAP}/{Resource.Payments.ToString().ToLower()}";
+            var response = await _client.PostAsObjAsync(requestUri, new { Token = token });
 
+            string data = await ReadResponseMessage(response);
             return JsonConvert.DeserializeObject<SingleResult<T>>(data, _customConverters).Data;
         }
 
-        private HttpClient _httpClient;
-        private Resource _resource => Resource.Payments;
+        public async Task<string> GetToken(TokenModel model)
+        {
+            string result = null;
+            if (model != null)
+            {
+                var tokenUrl = $@"{_settings.BridgeAP}/?transaction.mode={
+                    model.Mode}&channel.id={_settings.PublicKey}&jsonPFunction={
+                    model.PFunction}&account.number={model.Account}&account.expiry.month={
+                    model.Month}&account.expiry.year={model.Year}&account.verification={
+                    model.Verification}&account.holder={model.Holder}&presentation.amount3D={
+                    model.Amount3D}&presentation.currency3D={model.Currency3D}";
+                var content = await _client.GetStringAsync(tokenUrl);
+
+                var pattern = "(tok_)[a-z|0-9]+";
+                if (Regex.Matches(content, pattern).Count > 0)
+                {
+                    result = Regex.Matches(content, pattern)[0].Value;
+                }
+            }
+
+            return await Task.Run(() => {
+                return result;
+            });
+        }
+
         private JsonConverter[] _customConverters = {
             new UnixTimestampConverter(), new StringToNIntConverter()};
 
-        private Task<String> readReponseMessage(HttpResponseMessage response)
+        private async Task<string> ReadResponseMessage(HttpResponseMessage response)
         {
+            string result = String.Empty;
             try
             {
-                var json = response.Content.ReadAsStringAsync().Result;
-                var jsonArray = JObject.Parse(json);
-                if (jsonArray["data"] != null)
+                var stream = await response.Content.ReadAsStreamAsync();
+                using (var reader = new StreamReader(stream, Encoding.UTF8))
                 {
-                    return response.Content.ReadAsStringAsync();
+                    result = reader.ReadToEnd();
                 }
-                else if (jsonArray["error"] != null)
+
+                var jsonArray = JObject.Parse(result);
+                if (jsonArray["error"] != null)
                 {
-                    string error = jsonArray["error"].ToString();
+                    var error = jsonArray["error"].ToString();
                     throw new Exception(error);
                 }
             }
-            catch (System.IO.IOException exc)
+            catch (Exception exc)
             {
                 throw new Exception(exc.Message);
             }
 
-            return Task.Run(() => {
-                return String.Empty;
+            return await Task.Run(() => {
+                return result;
             });
-        }
-
-        private string EncodeObject(object data)
-        {
-            if (data.GetType().Name.Contains("AnonymousType") == false)
-            {
-                throw new ArgumentException("Invalid object to encode");
-            }
-
-            var props = data.GetType().GetProperties();
-            var sb = new StringBuilder();
-            foreach (var prop in props)
-            {
-                object value = prop.GetValue(data, null);
-                if (value != null)
-                {
-                    addKeyValuePair(sb, prop.Name.ToLower(), value);
-                }
-            }
-
-            return sb.ToString();
-        }
-
-        private void addKeyValuePair(StringBuilder sb, string key, object value)
-        {
-            string reply = "";
-            var charset = Encoding.UTF8;
-            if (null == value) 
-                return;
-            try
-            {
-                key = HttpUtility.UrlEncode(key.ToLower(), charset);
-
-                if (value.GetType().IsEnum)
-                {
-                    reply = value.ToString().ToLower();
-                }
-                else if (value.GetType().Equals(typeof(DateTime)))
-                {
-                    if (value.Equals(DateTime.MinValue))
-                    {
-                        reply = "";
-                    }
-                    else
-                    {
-                        reply = ((DateTime)value).ToUnixTimestamp().ToString();
-                    }
-                }
-                else
-                {
-                    reply = HttpUtility.UrlEncode(value.ToString(), charset);
-                }
-
-                if (!String.IsNullOrEmpty(reply))
-                {
-                    if (sb.Length > 0)
-                        sb.Append("&");
-
-                    sb.Append(String.Format("{0}={1}", key, reply));
-                }
-
-            }
-            catch
-            {
-                throw new Exception(
-                    String.Format("Unsupported or invalid character set encoding '{0}'.", charset));
-            }
         }
     }
 }

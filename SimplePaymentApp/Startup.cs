@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SimplePaymentApp.Services;
+using AutoMapper;
 
 namespace SimplePaymentApp
 {
@@ -17,12 +18,12 @@ namespace SimplePaymentApp
             var builder = new ConfigurationBuilder();
 
             builder.SetBasePath(env.ContentRootPath);
-            builder.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
             if (env.IsDevelopment())
             {
                 builder.AddUserSecrets<Startup>();
-                builder.AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true);
             }
+            builder.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
+            builder.AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true);
             builder.AddEnvironmentVariables();
 
             Configuration = builder.Build();
@@ -40,15 +41,11 @@ namespace SimplePaymentApp
             var paymill = Configuration.GetSection("PayMill");
             services.Configure<PaymillSettings>(paymill);
             services.AddTransient<IPaymentService, PaymentService>();
-            services.AddAuthentication(o =>
-            {
-                o.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                o.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
-            })
-            .AddAzureAd(o => Configuration.Bind("AzureAd", o))
-            .AddCookie();
+            services.AddScoped<IHttpClient, HttpClientService>();
 
+            this.ConfigureAuth(services);
             services.AddMvc();
+            services.AddAutoMapper(x => x.AddProfile(new MappingEntity()));
         }
 
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
@@ -72,6 +69,17 @@ namespace SimplePaymentApp
                     name: "default",
                     template: "{controller=Home}/{action=Index}/{id?}");
             });
+        }
+
+        protected virtual void ConfigureAuth(IServiceCollection services)
+        {
+            services.AddAuthentication(o =>
+            {
+                o.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                o.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
+            })
+            .AddAzureAd(o => Configuration.Bind("AzureAd", o))
+            .AddCookie();
         }
     }
 }

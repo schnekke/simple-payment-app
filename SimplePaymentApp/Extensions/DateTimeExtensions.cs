@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace SimplePaymentApp.Utils
+namespace SimplePaymentApp
 {
     internal static class DateTimeExtensions
     {
@@ -11,10 +11,12 @@ namespace SimplePaymentApp.Utils
         {
             return (int)(dateTime - unixEpoch).TotalSeconds;
         }
+
         public static int ToUnixTimestampMiliseconds(this DateTime dateTime)
         {
             return (int)(dateTime - unixEpoch).TotalMilliseconds;
         }
+
         public static DateTime ParseAsUnixTimestamp(this int timestamp)
         {
             return unixEpoch.AddSeconds(timestamp);

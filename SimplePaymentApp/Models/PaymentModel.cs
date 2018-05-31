@@ -23,8 +23,9 @@ namespace SimplePaymentApp.Models
         public string Name { get; set; }
 
         [Required]
+        [DefaultValue(1.0)]
         [Range(1, Double.MaxValue, ErrorMessage = "Must be greater than 0")]
-        public decimal Quantity { get; set; }
+        public double Quantity { get; set; }
 
         [Required]
         [Display(Name = "Valid until")]

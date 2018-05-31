@@ -3,6 +3,8 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimplePaymentApp", "SimplePaymentApp\SimplePaymentApp.csproj", "{CE26A40D-8B93-4957-8338-71C9FF67EA03}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimplePaymentApp.Tests", "SimplePaymentApp.Tests\SimplePaymentApp.Tests.csproj", "{8121114F-AD0A-4A8F-A773-ADA01AD748A5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -13,5 +15,9 @@ Global
 		{CE26A40D-8B93-4957-8338-71C9FF67EA03}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CE26A40D-8B93-4957-8338-71C9FF67EA03}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CE26A40D-8B93-4957-8338-71C9FF67EA03}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8121114F-AD0A-4A8F-A773-ADA01AD748A5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8121114F-AD0A-4A8F-A773-ADA01AD748A5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8121114F-AD0A-4A8F-A773-ADA01AD748A5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8121114F-AD0A-4A8F-A773-ADA01AD748A5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

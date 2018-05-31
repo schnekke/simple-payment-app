@@ -2,7 +2,7 @@
 
 namespace SimplePaymentApp.Utils
 {
-    enum Resource
+    public enum Resource
     {
         Clients,
         Offers,
