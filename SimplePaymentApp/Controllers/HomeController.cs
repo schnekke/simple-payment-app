@@ -28,22 +28,12 @@ namespace SimplePaymentApp.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Index([FromBody]PaymentModel viewModel)
+        public async Task<IActionResult> Index(PaymentModel viewModel)
         {
             if (ModelState.IsValid)
             {
-                ViewBag.Result = "Error in payment";
-
                 var tokenModel = _mapper.Map<TokenModel>(viewModel);
-                var token = await _service.GetToken(tokenModel);
-                if (!String.IsNullOrEmpty(token))
-                {
-                    Payment payment = await _service.CreateWithToken<Payment>(token);
-                    if (!String.IsNullOrEmpty(payment.Id))
-                    {
-                        ViewBag.Result = "Payment OK";
-                    }
-                }
+                await Process(tokenModel);
             }
             return View(viewModel);
         }
@@ -52,6 +42,22 @@ namespace SimplePaymentApp.Controllers
         public IActionResult Error()
         {
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        }
+
+        [NonAction]
+        private async Task Process(TokenModel model)
+        {
+            ViewBag.Result = "Error in payment";
+
+            var token = await _service.GetToken(model);
+            if (!String.IsNullOrEmpty(token))
+            {
+                Payment payment = await _service.CreateWithToken<Payment>(token);
+                if (!String.IsNullOrEmpty(payment.Id))
+                {
+                    ViewBag.Result = "Payment OK";
+                }
+            }
         }
     }
 }

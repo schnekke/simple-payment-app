@@ -151,12 +151,12 @@ namespace SimplePaymentApp.Tests
                 {
                     Code = "111",
                     Name = "Chris Hansen",
-                    Number = null,
+                    Number = "",
                     Valid = new DateTime(2020, 1, 1)
                 };
 
                 // Act
-                var response = await client.PostAsJsonAsync("/", model);
+                var response = await client.PostAsObjAsync("/", model);
                 response.EnsureSuccessStatusCode();
 
                 var stream = await response.Content.ReadAsStreamAsync();
@@ -167,6 +167,7 @@ namespace SimplePaymentApp.Tests
                 HtmlNodeCollection links = doc.DocumentNode.SelectNodes("//input[@class='form-control input-validation-error']");
 
                 // Assert
+                Assert.NotNull(links);
                 Assert.Equal(links.Count, 1);
                 Assert.Equal(links[0].Attributes.FirstOrDefault(f => f.Name == "name")?.Value, "Number");
             }
@@ -194,7 +195,7 @@ namespace SimplePaymentApp.Tests
                 };
 
                 // Act
-                var response = await client.PostAsJsonAsync("/", model);
+                var response = await client.PostAsObjAsync("/", model);
                 response.EnsureSuccessStatusCode();
 
                 var stream = await response.Content.ReadAsStreamAsync();
@@ -205,6 +206,7 @@ namespace SimplePaymentApp.Tests
                 HtmlNodeCollection links = doc.DocumentNode.SelectNodes("//input[@class='form-control input-validation-error']");
 
                 // Assert
+                Assert.NotNull(links);
                 Assert.Equal(links.Count, 1);
                 Assert.Equal(links[0].Attributes.FirstOrDefault(f => f.Name == "name")?.Value, "Quantity");
             }
@@ -231,7 +233,7 @@ namespace SimplePaymentApp.Tests
                 };
 
                 // Act
-                var response = await client.PostAsJsonAsync("/", model);
+                var response = await client.PostAsObjAsync("/", model);
                 response.EnsureSuccessStatusCode();
 
                 var stream = await response.Content.ReadAsStreamAsync();
@@ -242,6 +244,7 @@ namespace SimplePaymentApp.Tests
                 HtmlNodeCollection links = doc.DocumentNode.SelectNodes("//input[@class='form-control input-validation-error']");
 
                 // Assert
+                Assert.NotNull(links);
                 Assert.Equal(links.Count, 1);
                 Assert.Equal(links[0].Attributes.FirstOrDefault(f => f.Name == "name")?.Value, "Valid");
             }
@@ -268,7 +271,7 @@ namespace SimplePaymentApp.Tests
                 };
 
                 // Act
-                var response = await client.PostAsJsonAsync("/", model);
+                var response = await client.PostAsObjAsync("/", model);
                 response.EnsureSuccessStatusCode();
 
                 var stream = await response.Content.ReadAsStreamAsync();
@@ -279,6 +282,7 @@ namespace SimplePaymentApp.Tests
                 HtmlNodeCollection links = doc.DocumentNode.SelectNodes("//input[@class='form-control input-validation-error']");
 
                 // Assert
+                Assert.NotNull(links);
                 Assert.Equal(links.Count, 1);
                 Assert.Equal(links[0].Attributes.FirstOrDefault(f => f.Name == "name")?.Value, "Name");
             }
@@ -305,7 +309,7 @@ namespace SimplePaymentApp.Tests
                 };
 
                 // Act
-                var response = await client.PostAsJsonAsync("/", model);
+                var response = await client.PostAsObjAsync("/", model);
                 response.EnsureSuccessStatusCode();
 
                 var stream = await response.Content.ReadAsStreamAsync();
@@ -316,6 +320,7 @@ namespace SimplePaymentApp.Tests
                 HtmlNodeCollection links = doc.DocumentNode.SelectNodes("//input[@class='form-control input-validation-error']");
 
                 // Assert
+                Assert.NotNull(links);
                 Assert.Equal(links.Count, 1);
                 Assert.Equal(links[0].Attributes.FirstOrDefault(f => f.Name == "name")?.Value, "Code");
             }
@@ -342,7 +347,7 @@ namespace SimplePaymentApp.Tests
                 };
 
                 // Act
-                var response = await client.PostAsJsonAsync("/", model);
+                var response = await client.PostAsObjAsync("/", model);
                 response.EnsureSuccessStatusCode();
 
                 var content = await response.Content.ReadAsStringAsync();
@@ -373,7 +378,7 @@ namespace SimplePaymentApp.Tests
                 };
 
                 // Act
-                var response = await client.PostAsJsonAsync("/", model);
+                var response = await client.PostAsObjAsync("/", model);
                 response.EnsureSuccessStatusCode();
 
                 var content = await response.Content.ReadAsStringAsync();

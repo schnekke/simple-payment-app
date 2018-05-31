@@ -15,5 +15,14 @@ namespace SimplePaymentApp
             content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
             return httpClient.PostAsync(url, content);
         }
+
+        public static Task<HttpResponseMessage> PostAsObjAsync(
+            this HttpClient httpClient, string url, object data)
+        {
+            var encoded = data.EncodeObject();
+            var content = new StringContent(encoded);
+            content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
+            return httpClient.PostAsync(url, content);
+        }
     }
 }

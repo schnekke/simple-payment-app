@@ -38,9 +38,9 @@ namespace SimplePaymentApp.Models
                     this.Interval = int.Parse(intervalParts[0]);
                     this.Unit = TypeUnit.Create(intervalParts[1]);
                 }
-                catch (IndexOutOfRangeException e)
+                catch
                 {
-                    throw new ArgumentException("Invalid period:" + interval);
+                    throw new ArgumentException($"Invalid period: {interval}");
                 }
             }
 
@@ -77,9 +77,9 @@ namespace SimplePaymentApp.Models
                     this.Interval = int.Parse(intervalParts[0]);
                     this.Unit = TypeUnit.Create(intervalParts[1]);
                 }
-                catch (IndexOutOfRangeException e)
+                catch
                 {
-                    throw new ArgumentException("Invalid period:" + interval);
+                    throw new ArgumentException($"Invalid period: {interval}");
                 }
             }
 
