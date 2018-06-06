@@ -186,3 +186,4 @@ FakesAssemblies/
 .vs/
 .vscode/
 artifacts/
+**/azurekeyvault.json

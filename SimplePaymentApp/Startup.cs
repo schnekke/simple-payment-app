@@ -19,13 +19,21 @@ namespace SimplePaymentApp
             var builder = new ConfigurationBuilder();
 
             builder.SetBasePath(env.ContentRootPath);
+            builder.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
+            builder.AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true);
+            builder.AddEnvironmentVariables();
             if (env.IsDevelopment())
             {
                 builder.AddUserSecrets<Startup>();
             }
-            builder.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
-            builder.AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true);
-            builder.AddEnvironmentVariables();
+            if (env.IsProduction())
+            {
+                builder.AddJsonFile("azurekeyvault.json", optional:false, reloadOnChange: true);
+                var config = builder.Build();
+                builder.AddAzureKeyVault($"https://{config["azureKeyVault:vault"]}.vault.azure.net/",
+                    config["azureKeyVault:clientId"],
+                    config["azureKeyVault:clientSecret"]);
+            }
 
             Configuration = builder.Build();
         }
@@ -61,7 +69,7 @@ namespace SimplePaymentApp
             }
 
             app.UseStaticFiles();
-
+            
             app.Use(async (context, next) =>
             {
                 context.Request.Scheme = "https";
